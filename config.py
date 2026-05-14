@@ -1,0 +1,6 @@
+TELEGRAM_BOT_TOKEN = "8762384816:AAHuY0pRdOJDTsKg8klhJmmvqtSiyEjYwR0"
+YANDEX_API_KEY = "AQVNzZFkvcxS_unSYy5TmvVcS6d4U4nTgPi1VXgY"
+YANDEX_BASE_URL = "https://llm.api.cloud.yandex.net/foundationModels/v1"
+YANDEX_FOLDER_ID = "b1gau4pnrq03dfscemek"
+FFMPEG_PATH = r"C:\ffmpeg\bin\ffmpeg.exe"
+FFPROBE_PATH = r"C:\ffmpeg\bin\ffprobe.exe"
