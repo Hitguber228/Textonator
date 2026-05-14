@@ -24,10 +24,10 @@ VoiceAnalyst (Аудио-Скрайбер)
 git clone https://github.com/Hitguber228/Textonator.git
 cd Textonator
 
-3. Установи библиотеки:
+2. Установи библиотеки:
 pip install -r requirements.txt
 
-4. Создай файл `config.py` и запиши туда ключи:
+3. Создай файл `config.py` и запиши туда ключи:
 python
 TELEGRAM_BOT_TOKEN = "токен от BotFather"
 YANDEX_API_KEY = "ключ от Yandex Cloud"
@@ -35,19 +35,16 @@ YANDEX_FOLDER_ID = "ID каталога"
 FFMPEG_PATH = r"C:\ffmpeg\bin\ffmpeg.exe"
 FFPROBE_PATH = r"C:\ffmpeg\bin\ffprobe.exe"
 
-4.Установи FFmpeg с ffmpeg.org (Без него никак) Вот гайд: https://www.youtube.com/watch?v=9_ldCQUgU7Q
+4. Установи FFmpeg с ffmpeg.org (Без него никак) Вот гайд: https://www.youtube.com/watch?v=9_ldCQUgU7Q
 
-5.Запусти!
+5. Запусти!
 python main.py
 
 Как пользоваться?
-Найди бота в Telegram: @VoiceAnalystBot
-
-Отправь файл
-
-Выбери "Анализировать полностью" или "Обрезать фрагмент"
-
-Получи результат
+1. Найди бота в Telegram: @VoiceAnalystBot
+2. Отправь файл
+3. Выбери "Анализировать полностью" или "Обрезать фрагмент"
+4. Получи результат
 
 Стек технологий:
 Python 3.11
