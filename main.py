@@ -1,6 +1,7 @@
 """
 Аудио-Скрайбер — ИИ-ассистент для расшифровки, анализа и протоколирования аудио/видео.
 """
+
 import requests, json, re, logging, subprocess, time, asyncio
 from pathlib import Path
 from io import BytesIO
@@ -25,13 +26,8 @@ from docx import Document
 from docx.shared import Pt, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 
-
-
-
 TEMP_DIR = Path("./temp")
 TEMP_DIR.mkdir(exist_ok=True)
-
-
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
@@ -40,7 +36,6 @@ logger.info("Загружаю Whisper (base)...")
 whisper_model = WhisperModel("base", device="cpu", compute_type="int8")
 logger.info("Whisper готов.")
 
-# Medium-модель загружается только при необходимости
 medium_model = None
 
 llm_client = OpenAI(
@@ -58,10 +53,6 @@ pending_cut = {}
 segments_storage = {}
 protocol_storage = {}
 usage_stats = {"total_processed": 0, "total_seconds": 0}
-
-# ============================================================
-# ДИЗАЙН КНОПОК
-# ============================================================
 
 def main_menu():
     return InlineKeyboardMarkup([
@@ -105,10 +96,6 @@ def translate_menu():
         [InlineKeyboardButton("🇯🇵 日本語", callback_data="translate_ja")],
         [InlineKeyboardButton("◀️ Назад к результатам", callback_data="back_to_result")],
     ])
-
-# ============================================================
-# УТИЛИТЫ
-# ============================================================
 
 def format_time(seconds: float) -> str:
     return f"{int(seconds // 60):02d}:{int(seconds % 60):02d}"
@@ -158,35 +145,25 @@ def get_audio_stats(audio_path: Path, transcript: str) -> str:
     except:
         return "📊 Статистика недоступна"
 
-
 def transcribe_audio(audio_path: Path) -> tuple:
-    """
-    Расшифровывает аудио с авто-выбором модели.
-    Если качество низкое — переключается на medium-модель.
-    """
     global medium_model
     segments_list, segments_with_timestamps = [], []
 
-    # Пробуем base-модель
     logger.info("🎙 Расшифровка base-моделью...")
     segments, info = whisper_model.transcribe(str(audio_path), beam_size=5)
 
-    # Сразу сохраняем в список, чтобы итератор не исчерпался
     all_segments = list(segments)
     full_text = " ".join([s.text.strip() for s in all_segments])
     word_count = len(full_text.split())
     avg_prob = info.language_probability
 
-    # Считаем осмысленность текста (доля слов длиннее 2 символов)
     meaningful_words = [w for w in full_text.split() if len(w) > 2]
     meaningful_ratio = len(meaningful_words) / max(word_count, 1)
 
     quality_score = (avg_prob * 0.5) + (meaningful_ratio * 0.5)
 
-    logger.info(
-        f"Качество base: слов={word_count}, вероятность={avg_prob:.2f}, осмысленность={meaningful_ratio:.2f}, итог={quality_score:.2f}")
+    logger.info(f"Качество base: слов={word_count}, вероятность={avg_prob:.2f}, осмысленность={meaningful_ratio:.2f}, итог={quality_score:.2f}")
 
-    # Порог переключения на medium
     if quality_score < 0.6 or word_count < 10:
         logger.info("⚠️ Низкое качество — загружаю medium-модель...")
         try:
@@ -214,7 +191,6 @@ def transcribe_audio(audio_path: Path) -> tuple:
     return final_text, segments_with_timestamps, info.language
 
 def extract_keywords_with_llm(transcript: str) -> list:
-    """Извлекает ключевые слова через YandexGPT для Mind Map."""
     prompt = f"""Ниже расшифровка разговора, возможно с ошибками распознавания.
 Найди ОБЩИЙ СМЫСЛ, игнорируй бессмысленные слова.
 Выдели 5-7 ГЛАВНЫХ ТЕМ или КЛЮЧЕВЫХ ПОНЯТИЙ (существительные или словосочетания).
@@ -238,7 +214,6 @@ def extract_keywords_with_llm(transcript: str) -> list:
     except Exception as e:
         logger.error(f"Ошибка ключевых слов: {e}")
 
-    # Fallback: частотный анализ осмысленных слов
     stop_words = {"это", "что", "как", "ты", "она", "там", "ещё", "уже", "только", "будешь", "много", "делать", "голова", "кстати", "почему", "когда", "говорят", "считает"}
     words = [w.strip(".,!?;:()[]{}«»\"'") for w in transcript.split()
              if len(w) > 4 and w.lower() not in stop_words]
@@ -285,7 +260,6 @@ def translate_text(text: str, target_lang: str) -> str:
         return "❌ Ошибка перевода"
 
 def generate_mind_map(transcript: str, topics: list, decisions: list) -> BytesIO:
-    """Рисует Mind Map на основе ключевых слов от нейросети."""
     keywords = extract_keywords_with_llm(transcript)
     if not keywords: keywords = topics[:7]
 
@@ -372,10 +346,6 @@ def generate_protocol(analysis: dict, transcript: str, is_cut: bool = False,
     buf.seek(0)
     return buf
 
-# ============================================================
-# ОСНОВНОЙ ПРОЦЕСС ОБРАБОТКИ
-# ============================================================
-
 async def process_audio_analysis(message, user_id: int, audio_path: Path, is_cut=False, ss=None, to=None):
     t0 = time.time()
     if user_id not in audio_storage: audio_storage[user_id] = str(audio_path)
@@ -458,10 +428,6 @@ async def process_audio_analysis(message, user_id: int, audio_path: Path, is_cut
     else:
         await message.reply_document(BytesIO(transcript.encode()), filename="transcript.txt", caption="📝 Полная расшифровка")
         await message.reply_text("<b>✅ Готово!</b>", parse_mode="HTML", reply_markup=after_result_menu())
-
-# ============================================================
-# ОБРАБОТЧИКИ КОМАНД
-# ============================================================
 
 async def start_command(update: Update, context):
     text = """
@@ -602,7 +568,6 @@ async def handle_media(update: Update, context):
     elif m.video_note: fid, suf, mt = m.video_note.file_id, "video_note.mp4", "⭕ Видеокружок"
     else: return
 
-    # Проверка размера
     file_obj = m.voice or m.audio or m.video or m.video_note
     if hasattr(file_obj, 'file_size'):
         size_mb = file_obj.file_size / (1024 * 1024)
@@ -619,7 +584,6 @@ async def handle_media(update: Update, context):
     except Exception as e:
         await m.reply_text(f"❌ Ошибка при скачивании: {e}")
 
-# Запуск
 def main():
     logger.info("Запуск бота...")
     app = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
